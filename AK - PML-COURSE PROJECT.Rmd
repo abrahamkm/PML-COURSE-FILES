@@ -1,0 +1,100 @@
+---
+title: "PML- COURSE PROJECT - AK"
+author: "Abraham Kandathil"
+date: "23 February 2016"
+output: html_document
+---
+
+#LOADING THE LIBRARIES
+
+```{r,echo=FALSE}
+# LOAD THE LIBRARIES
+library(caret)
+library(rpart)
+library(rpart.plot)
+library(randomForest)
+```
+
+#READ THE TRAINING AND TESTING DATA
+
+```{r, echo=FALSE}
+trainset <- read.csv("pml-training.csv", na.strings=c("NA","#DIV/0!", ""))
+testset <- read.csv("pml-testing.csv", na.strings=c("NA","#DIV/0!", ""))
+
+```
+
+#CLEANING THE TRAINING AND TESTING DATA
+
+```{r,echo=FALSE}
+# Delete columns with  missing values
+trainset<-trainset[,colSums(is.na(trainset)) == 0]
+testset <-testset[,colSums(is.na(testset)) == 0]
+
+# ELIMINATION OF UNNECESSARY VARIABLES:: X, user_name, raw_timestamp_part_1, raw_timestamp_part_,2 cvtd_timestamp, new_window, and  num_window (columns 1 to 7). We can delete these variables.
+trainset   <-trainset[,-c(1:7)]
+testset <-testset[,-c(1:7)]
+```
+
+
+#PARTITIONING DATA FOR CROSS VALIDATION
+
+The  cleaned up training data set contains 53 variables and 19622 obs.
+The cleaned up testing data set contains 53 variables and 20 obs.
+The training data set is further partionned into 2 sets: trnset (70%) and tstset (30%).
+
+```{r,echo=FALSE}
+partitioned_data <- createDataPartition(y=trainset$classe, p=0.7, list=FALSE)
+trnset <- trainset[partitioned_data, ] 
+tstset <- trainset[-partitioned_data, ]
+```
+
+##Observe the frequecy distribution of the classes
+```{r}
+plot(trnset$classe, col="light blue", main="Bar Plot of classe", xlab="classe", ylab="Frequency")
+
+```
+As can be seen in the plot, Frequencies are thus relatively uniform for all the classes. 
+Level A has the highest frequency with over 3800 occurrences.  Level D has has the lowest with over 2000 occurrences.
+The other classes B, C and D have between 2000 and 3000 occurrences respectively.
+
+#RUNNING PREDICTIONS
+Two models have been used to contrast the performance viz. the DECISION TREE MODEL and the RANDOM FOREST model.
+
+```{r,echo=FALSE}
+# PREDICTION MODEL 1 -- Using Decision Tree
+
+mod1 <- rpart(classe ~ ., data=trnset, method="class")
+
+# Predicting:
+pred1 <- predict(mod1, tstset, type = "class")
+
+# Plot of TREE
+rpart.plot(mod1, main="CLASSIFICATION TREE", extra=102, under=TRUE, faclen=0)
+
+# Results on reduced data set:
+confusionMatrix(pred1, tstset$classe)
+
+```
+
+```{r,echo=FALSE}
+# PREDICTION MODEL 2 -- Using Random Forest
+
+mod2 <- randomForest(classe ~. , data=trnset, method="class")
+
+# Predicting:
+pred2 <- predict(mod2, tstset, type = "class")
+
+# Test results on subTesting data set:
+confusionMatrix(pred2, tstset$classe)
+```
+
+#INFERENCE
+
+Random Forest shows improved performance as compared to Decision Trees.
+Accuracy for Random Forest model was 0.9942 (95% CI: (0.9919, 0.996)) 
+Accuracy for Decision Tree model was 0.7427 (95% CI: (0.7314, 0.7539)). 
+The RANDOM FOREST MODEL is the preferred model with an accuracy 0.9942. 
+The expected out-of-sample error which is defined as 1 - accuracy for predictions made 
+against the cross-validation set is less than 0.5%. 
+With an accuracy greater than 99% there will be none or extremely few instances utmost of misclassification.
+
